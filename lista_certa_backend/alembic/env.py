@@ -9,20 +9,35 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# Adiciona a pasta raiz do projeto ao path do Python
+# --- Início da Configuração Essencial ---
+
+# 1. Adiciona a pasta raiz do projeto ao path do Python para que ele encontre o módulo 'app'
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+
+# 2. Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# Importa a Base (nosso catálogo) e os modelos para registrá-los
+# 3. Importa a Base do SQLAlchemy PRIMEIRO. Este é o nosso "catálogo" de tabelas.
 from app.db.database import Base
+
+# 4. Importa os modelos para que eles se registrem na Base.
+# Graças ao nosso __init__.py em app/db/models/, isso carrega a classe User.
 from app.db import models
 
-# Define o target_metadata a partir da Base, que agora "conhece" a tabela User
+# 5. Define o target_metadata a partir da Base, que agora "conhece" todos os modelos.
 target_metadata = Base.metadata
 
+# --- Fim da Configuração Essencial ---
+
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
 config = context.config
+
+# Interpret the config file for Python logging.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
+
 
 def include_object(object, name, type_, reflected, compare_to):
     """Função para dizer ao Alembic quais tabelas do PostGIS ignorar."""
