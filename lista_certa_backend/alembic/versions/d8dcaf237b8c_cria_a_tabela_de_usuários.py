@@ -1,8 +1,9 @@
-"""Cria a tabela de usuários (users)
+# alembic/script.py.mako
+"""Cria a tabela de usuários
 
-Revision ID: a508af3d24ce
+Revision ID: d8dcaf237b8c
 Revises: 
-Create Date: 2025-08-09 14:56:59.209809
+Create Date: 2025-08-09 15:42:03.078805
 
 """
 from typing import Sequence, Union
@@ -12,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a508af3d24ce'
+revision: str = 'd8dcaf237b8c'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
