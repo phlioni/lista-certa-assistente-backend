@@ -20,11 +20,6 @@ load_dotenv()
 # 3. Importa a Base (nosso catálogo)
 from app.db.database import Base
 
-# 4. FORÇA A DESCOBERTA DOS MODELOS (A CORREÇÃO PRINCIPAL)
-# Importa diretamente o arquivo do modelo para garantir que a classe User
-# seja registrada no Base ANTES de qualquer outra coisa.
-from app.db.models import user
-
 # 5. Define o target_metadata a partir da Base, que agora "conhece" a tabela User
 target_metadata = Base.metadata
 
