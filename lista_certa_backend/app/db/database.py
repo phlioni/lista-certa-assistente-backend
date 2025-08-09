@@ -11,3 +11,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 from app.db.models.user import User
+from app.db.models.shopping_list import ShoppingList
+
+# --- ADICIONE ESTA LINHA ---
+from app.db.models.market import Market

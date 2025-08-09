@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Selecionar Localização</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body,
+        html {
+            padding: 0;
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script>
+        window.onload = function () {
+            try {
+                const tg = window.Telegram.WebApp;
+                tg.ready();
+                tg.expand();
+
+                const mainButton = tg.MainButton;
+                mainButton.setText('Escolha um local no mapa');
+                mainButton.disable();
+                mainButton.show();
+
+                let marker = null;
+                let selectedLatLng = null;
+
+                const map = L.map('map').setView([-23.5505, -46.6333], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 16)
+                );
+
+                map.on('click', function (e) {
+                    const { lat, lng } = e.latlng;
+                    selectedLatLng = { latitude: lat, longitude: lng };
+
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker([lat, lng]).addTo(map);
+                    marker.bindPopup(`<b>Local selecionado!</b><br>Clique em 'Confirmar' abaixo.`).openPopup();
+
+                    mainButton.setText('Confirmar Localização');
+                    mainButton.enable();
+                });
+
+                async function getAddress(lat, lon) {
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=pt-BR`;
+                    const response = await fetch(url, {
+                        headers: { "User-Agent": "ListaCertaBot/1.0" }
+                    });
+                    if (!response.ok) throw new Error("Erro ao buscar endereço");
+                    const data = await response.json();
+                    return data.display_name || "Endereço não encontrado";
+                }
+
+                tg.onEvent('mainButtonClicked', async function () {
+                    if (!selectedLatLng) return;
+                    mainButton.showProgress();
+                    mainButton.disable();
+
+                    try {
+                        const address = await getAddress(selectedLatLng.latitude, selectedLatLng.longitude);
+                        const payload = {
+                            latitude: selectedLatLng.latitude,
+                            longitude: selectedLatLng.longitude,
+                            address: address
+                        };
+                        tg.sendData(JSON.stringify(payload));
+                        tg.close();
+                    } catch (error) {
+                        alert("Erro ao obter endereço: " + error.message);
+                        mainButton.hideProgress();
+                        mainButton.enable();
+                    }
+                });
+
+            } catch (err) {
+                document.body.innerHTML = `<div style="text-align: center; padding: 20px;"><h1>Erro</h1><p>Esta aplicação só funciona dentro do Telegram.</p></div>`;
+            }
+        };
+    </script>
+</body>
+
+</html>

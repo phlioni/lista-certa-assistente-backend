@@ -10,3 +10,7 @@ def create_user_shopping_list(db: Session, list_data: ShoppingListCreate, user_i
     db.commit()
     db.refresh(db_list)
     return db_list
+
+def get_user_shopping_lists(db: Session, user_id: int):
+    """Busca todas as listas de compras de um utilizador específico."""
+    return db.query(ShoppingList).filter(ShoppingList.owner_id == user_id).all()
