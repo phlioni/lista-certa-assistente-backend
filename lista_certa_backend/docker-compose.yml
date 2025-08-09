@@ -1,0 +1,20 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  db:
+    # Usamos uma imagem que já vem com o PostGIS instalado
+    image: postgis/postgis:15-3.3
+    container_name: lista_certa_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: lista_certa_db
+    ports:
+      - "5432:5432"
+    volumes:
+      # Isso garante que seus dados não sejam perdidos ao reiniciar o container
+      - ./postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

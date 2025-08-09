@@ -1,0 +1,51 @@
+# Arquivo .gitignore para o projeto Lista Certa (Python/FastAPI/Docker)
+
+# -- Ambientes Virtuais --
+# Ignora a pasta do ambiente virtual para não enviar bibliotecas instaladas.
+venv/
+.venv/
+env/
+.env/
+
+# -- Segredos e Configurações de Ambiente --
+# MUITO IMPORTANTE: Nunca envie seus segredos para o GitHub!
+.env
+
+# -- Arquivos de Cache do Python --
+# Ignora os arquivos de bytecode compilado.
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -- Banco de Dados e Docker --
+# Ignora a pasta com os dados brutos do PostgreSQL.
+postgres-data/
+
+# -- Configurações de IDEs e Editores --
+# Ignora pastas de configuração de editores como VS Code, PyCharm, etc.
+.vscode/
+.idea/
+*.swp
+
+# -- Arquivos de Sistema Operacional --
+# Ignora arquivos de cache de miniaturas do Windows e metadados do macOS.
+.DS_Store
+Thumbs.db
+
+# -- Ferramentas de Teste --
+# Ignora caches e relatórios de testes.
+.pytest_cache/
+.coverage
+htmlcov/
+pytestdebug.log
+
+# -- Ferramentas de Build e Pacotes --
+build/
+dist/
+*.egg-info/
+*.egg
+
+# -- Arquivos de Ferramentas de Desenvolvimento --
+# Opcional, mas recomendado se o seu authtoken estiver no arquivo.
+ngrok.yaml
