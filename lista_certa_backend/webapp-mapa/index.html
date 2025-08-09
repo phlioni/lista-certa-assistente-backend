@@ -65,35 +65,11 @@
                     mainButton.enable();
                 });
 
-                async function getAddress(lat, lon) {
-                    const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=pt-BR`;
-                    const response = await fetch(url, {
-                        headers: { "User-Agent": "ListaCertaBot/1.0" }
-                    });
-                    if (!response.ok) throw new Error("Erro ao buscar endereço");
-                    const data = await response.json();
-                    return data.display_name || "Endereço não encontrado";
-                }
-
-                tg.onEvent('mainButtonClicked', async function () {
+                tg.onEvent('mainButtonClicked', function () {
                     if (!selectedLatLng) return;
                     mainButton.showProgress();
                     mainButton.disable();
-
-                    try {
-                        const address = await getAddress(selectedLatLng.latitude, selectedLatLng.longitude);
-                        const payload = {
-                            latitude: selectedLatLng.latitude,
-                            longitude: selectedLatLng.longitude,
-                            address: address
-                        };
-                        tg.sendData(JSON.stringify(payload));
-                        tg.close();
-                    } catch (error) {
-                        alert("Erro ao obter endereço: " + error.message);
-                        mainButton.hideProgress();
-                        mainButton.enable();
-                    }
+                    tg.sendData(JSON.stringify(selectedLatLng));
                 });
 
             } catch (err) {
