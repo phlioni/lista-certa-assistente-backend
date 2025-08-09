@@ -9,22 +9,23 @@ from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
-# --- Início da Configuração Essencial ---
+# --- Início da Configuração Essencial e à Prova de Falhas ---
 
-# 1. Adiciona a pasta raiz do projeto ao path do Python para que ele encontre o módulo 'app'
+# 1. Adiciona a pasta raiz do projeto ao path do Python
 sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 2. Carrega as variáveis de ambiente do arquivo .env
 load_dotenv()
 
-# 3. Importa a Base do SQLAlchemy PRIMEIRO. Este é o nosso "catálogo" de tabelas.
+# 3. Importa a Base (nosso catálogo)
 from app.db.database import Base
 
-# 4. Importa os modelos para que eles se registrem na Base.
-# Graças ao nosso __init__.py em app/db/models/, isso carrega a classe User.
-from app.db import models
+# 4. FORÇA A DESCOBERTA DOS MODELOS (A CORREÇÃO PRINCIPAL)
+# Importa diretamente o arquivo do modelo para garantir que a classe User
+# seja registrada no Base ANTES de qualquer outra coisa.
+from app.db.models import user
 
-# 5. Define o target_metadata a partir da Base, que agora "conhece" todos os modelos.
+# 5. Define o target_metadata a partir da Base, que agora "conhece" a tabela User
 target_metadata = Base.metadata
 
 # --- Fim da Configuração Essencial ---
