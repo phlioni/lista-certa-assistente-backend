@@ -16,9 +16,10 @@ sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..'
 load_dotenv()  # Carrega as variáveis do arquivo .env
 
 # Importa a Base dos seus modelos
-from app.db.database import Base
+from app.db import models
 # Importa todos os modelos para que o autogenerate os detecte
-from app.db.models import user
+from app.db.database import Base
+from app.db import models # Importa o "índice" de modelos
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
