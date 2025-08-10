@@ -63,12 +63,18 @@ async def receive_list_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
 # --- LÓGICA PARA CADASTRAR MERCADO ---
 async def register_market_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("Iniciando cadastro de mercado...")
     query = update.callback_query
     await query.answer()
-    map_url = "https://friendly-monstera-a96fc6.netlify.app/" # <-- LEMBRE-SE DE ATUALIZAR ESTE LINK
+    
+    # Armazenar o user_id no contexto para usar depois
+    user_info = query.from_user
+    context.user_data['registering_market_user_id'] = user_info.id
+    
+    map_url = "https://lista-certa-maps.vercel.app/"
     
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Abrir Mapa para Selecionar", web_app=WebAppInfo(url=map_url))]
+        [InlineKeyboardButton("📍 Abrir Mapa para Selecionar", web_app=WebAppInfo(url=map_url))]
     ])
     await query.edit_message_text(
         text="Clique no botão abaixo para abrir o mapa e selecionar a localização exata do mercado.",
@@ -76,6 +82,7 @@ async def register_market_start(update: Update, context: ContextTypes.DEFAULT_TY
     )
 
 async def get_address_from_coords(latitude: float, longitude: float) -> str:
+    print(f"Obtendo endereço para coordenadas: {latitude}, {longitude}")
     url = f"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={latitude}&lon={longitude}"
     headers = {"User-Agent": "ListaCertaBot/1.0"}
     async with httpx.AsyncClient() as client:
@@ -89,35 +96,86 @@ async def get_address_from_coords(latitude: float, longitude: float) -> str:
             return "Não foi possível obter o endereço."
 
 async def receive_market_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    data = json.loads(update.message.web_app_data.data)
-    lat, lon = data['latitude'], data['longitude']
+    print("=== RECEIVE_MARKET_LOCATION CHAMADO ===")
+    print("Update completo:", update)
+    print("Update.message:", update.message)
+    
+    if not update.message:
+        print("ERRO: Não há mensagem no update")
+        return ConversationHandler.END
+        
+    print("Update.message.web_app_data:", getattr(update.message, "web_app_data", None))
+    
+    if not hasattr(update.message, "web_app_data") or not update.message.web_app_data:
+        print("ERRO: Não há web_app_data na mensagem")
+        await update.message.reply_text("❌ Não recebi dados do WebApp. Tente novamente.")
+        return ConversationHandler.END
+
+    try:
+        data = json.loads(update.message.web_app_data.data)
+        print("✅ Dados recebidos do WebApp:", data)
+        lat, lon = data['latitude'], data['longitude']
+    except Exception as e:
+        print("❌ Erro ao processar dados do WebApp:", e)
+        await update.message.reply_text("❌ Dados inválidos recebidos do WebApp.")
+        return ConversationHandler.END
+
+    # Obter endereço
     address = await get_address_from_coords(lat, lon)
-    context.user_data['market_location_data'] = {"latitude": lat, "longitude": lon, "address": address}
+    
+    # Armazenar dados no contexto
+    context.user_data['market_location_data'] = {
+        "latitude": lat, 
+        "longitude": lon, 
+        "address": address
+    }
+    
     await update.message.reply_text(
-        f"📍 Localização recebida!\n\n*Endereço:* {address}\n\nAgora, por favor, digite o nome do mercado.",
+        f"📍 *Localização recebida com sucesso!*\n\n"
+        f"*Endereço:* {address}\n\n"
+        f"Agora, por favor, digite o *nome do mercado*.",
         parse_mode='Markdown'
     )
+    
+    # Iniciar a conversa para receber o nome do mercado
     return ASKING_MARKET_NAME
 
 async def receive_market_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    print("=== RECEIVE_MARKET_NAME CHAMADO ===")
     market_name = update.message.text
     location_data = context.user_data.get('market_location_data')
+    
     if not location_data:
-        await update.message.reply_text("Ocorreu um erro, não encontrei os dados de localização. Por favor, tente novamente.")
+        await update.message.reply_text("❌ Ocorreu um erro, não encontrei os dados de localização. Por favor, tente novamente.")
         return ConversationHandler.END
 
+    # Obter informações do usuário
+    user_info = update.message.from_user
+    
     db = SessionLocal()
     try:
         market_data = MarketCreate(
-            name=market_name, latitude=location_data['latitude'],
-            longitude=location_data['longitude'], address=location_data['address']
+            name=market_name, 
+            latitude=location_data['latitude'],
+            longitude=location_data['longitude'], 
+            address=location_data['address']
         )
         crud_market.create_market(db, market=market_data)
-        await update.message.reply_text(f"✅ Mercado '{market_name}' cadastrado com sucesso!")
+        await update.message.reply_text(
+            f"✅ *Mercado '{market_name}' cadastrado com sucesso!*\n\n"
+            f"📍 *Localização:* {location_data['address']}",
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        print(f"Erro ao salvar mercado: {e}")
+        await update.message.reply_text("❌ Erro ao salvar o mercado. Tente novamente.")
     finally:
         db.close()
     
+    # Limpar dados do contexto
     context.user_data.pop('market_location_data', None)
+    context.user_data.pop('registering_market_user_id', None)
+    
     return ConversationHandler.END
 
 # --- FUNÇÕES GENÉRICAS ---
@@ -146,3 +204,4 @@ async def show_my_lists(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def cancel_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Ação cancelada.")
     return ConversationHandler.END
+

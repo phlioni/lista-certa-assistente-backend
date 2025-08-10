@@ -11,6 +11,7 @@ from .handlers import (
 )
 
 telegram_app = Application.builder().token(settings.BOT_TOKEN).build()
+print("Telegram bot application initialized.")
 
 # Conversa para criar listas
 list_conv_handler = ConversationHandler(
@@ -21,9 +22,7 @@ list_conv_handler = ConversationHandler(
 
 # Conversa para cadastrar mercados
 market_conv_handler = ConversationHandler(
-    # A entrada é agora uma MENSAGEM que contém dados do Web App.
-    # Este é o "ouvinte" que estava em falta.
-    entry_points=[MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receive_market_location)],
+    entry_points=[CallbackQueryHandler(register_market_start, pattern='^register_market$')],
     states={
         ASKING_MARKET_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_market_name)]
     },
@@ -33,10 +32,26 @@ market_conv_handler = ConversationHandler(
 # --- REGISTO DE TODOS OS HANDLERS ---
 telegram_app.add_handler(CommandHandler("start", start))
 
+# Handler específico para dados do WebApp - DEVE VIR ANTES dos ConversationHandlers
+telegram_app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receive_market_location))
+
 # Registamos as duas conversas
 telegram_app.add_handler(list_conv_handler)
 telegram_app.add_handler(market_conv_handler)
 
 # Registamos os handlers para os cliques nos botões
 telegram_app.add_handler(CallbackQueryHandler(show_my_lists, pattern='^my_lists$'))
-telegram_app.add_handler(CallbackQueryHandler(register_market_start, pattern='^register_market$'))
+
+# Handler de debug (deve vir por último)
+def debug_handler(update, context):
+    print("DEBUG: Mensagem recebida:", update)
+    print("DEBUG: Tipo de update:", type(update))
+    if hasattr(update, 'message') and update.message:
+        print("DEBUG: Mensagem:", update.message)
+        if hasattr(update.message, 'web_app_data'):
+            print("DEBUG: Web App Data:", update.message.web_app_data)
+
+telegram_app.add_handler(MessageHandler(filters.ALL, debug_handler))
+
+
+
