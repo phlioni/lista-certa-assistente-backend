@@ -13,7 +13,7 @@ from .handlers import (
 telegram_app = Application.builder().token(settings.BOT_TOKEN).build()
 print("Telegram bot application initialized.")
 
-# Conversa para criar listas
+# Conversa para criar lista
 list_conv_handler = ConversationHandler(
     entry_points=[CallbackQueryHandler(create_list_start, pattern='^create_list$')],
     states={ ASKING_LIST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_list_name)] },
