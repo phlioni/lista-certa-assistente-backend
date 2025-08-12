@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     """
     Gerencia o ciclo de vida do bot: inicializa na partida e finaliza no desligamento.
     """
-    print("Iniciando o bot e configurando o webhook...")
+    print("Iniciando o bot e configurando o webhook..")
     await telegram_app.initialize()
     await telegram_app.start()
     
