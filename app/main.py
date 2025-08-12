@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     await telegram_app.initialize()
     await telegram_app.start()
     
-    webhook_url = f"{settings.APP_URL}/webhook/{settings.BOT_TOKEN}"
+    webhook_url = f"http://{settings.APP_URL}/webhook/{settings.BOT_TOKEN}"
     async with httpx.AsyncClient() as client:
         response = await client.get(f"https://api.telegram.org/bot{settings.BOT_TOKEN}/setWebhook?url={webhook_url}")
         if response.status_code == 200:
