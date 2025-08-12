@@ -5,10 +5,10 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Copia o ficheiro de dependências
-COPY requirements.txt .
+COPY requirements_utf8.txt .
 
 # Instala as dependências
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_utf8.txt
 
 # Copia todo o código da aplicação
 COPY ./app ./app

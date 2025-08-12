@@ -103,18 +103,11 @@ async def receive_market_location(update: Update, context: ContextTypes.DEFAULT_
     if not update.message:
         print("ERRO: Não há mensagem no update")
         return ConversationHandler.END
-        
-    print("Update.message.web_app_data:", getattr(update.message, "web_app_data", None))
-    
-    if not hasattr(update.message, "web_app_data") or not update.message.web_app_data:
-        print("ERRO: Não há web_app_data na mensagem")
-        await update.message.reply_text("❌ Não recebi dados do WebApp. Tente novamente.")
-        return ConversationHandler.END
 
     try:
         data = json.loads(update.message.web_app_data.data)
         print("✅ Dados recebidos do WebApp:", data)
-        lat, lon = data['latitude'], data['longitude']
+        lat, lon = data["latitude"], data["longitude"]
     except Exception as e:
         print("❌ Erro ao processar dados do WebApp:", e)
         await update.message.reply_text("❌ Dados inválidos recebidos do WebApp.")
@@ -124,7 +117,7 @@ async def receive_market_location(update: Update, context: ContextTypes.DEFAULT_
     address = await get_address_from_coords(lat, lon)
     
     # Armazenar dados no contexto
-    context.user_data['market_location_data'] = {
+    context.user_data["market_location_data"] = {
         "latitude": lat, 
         "longitude": lon, 
         "address": address
@@ -134,7 +127,7 @@ async def receive_market_location(update: Update, context: ContextTypes.DEFAULT_
         f"📍 *Localização recebida com sucesso!*\n\n"
         f"*Endereço:* {address}\n\n"
         f"Agora, por favor, digite o *nome do mercado*.",
-        parse_mode='Markdown'
+        parse_mode="Markdown"
     )
     
     # Iniciar a conversa para receber o nome do mercado
