@@ -12,12 +12,14 @@
                 }
             ],
             "essential": true,
-            "environment": []
+            "environment": [
+                { "name": "DATABASE_URL", "value": "placeholder" },
+                { "name": "BOT_TOKEN", "value": "placeholder" },
+                { "name": "APP_URL", "value": "placeholder" }
+            ]
         }
     ],
-    "requiresCompatibilities": [
-        "FARGATE"
-    ],
+    "requiresCompatibilities": [ "FARGATE" ],
     "networkMode": "awsvpc",
     "cpu": "256",
     "memory": "512",
