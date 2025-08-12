@@ -45,9 +45,9 @@ jobs:
         # --- SEÇÃO ADICIONADA ---
         # Injeta os segredos como variáveis de ambiente
         environment-variables: |
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          BOT_TOKEN=${{ secrets.BOT_TOKEN }}
-          APP_URL=${{ secrets.APP_URL }}
+          [{"name": "DATABASE_URL", "value": "${{ secrets.DATABASE_URL }}"},
+          {"name": "BOT_TOKEN", "value": "${{ secrets.BOT_TOKEN }}"},
+          {"name": "APP_URL", "value": "${{ secrets.APP_URL }}"}]
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
