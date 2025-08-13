@@ -9,7 +9,7 @@ from telegram import Update
 from app.core.config import settings
 # Importa a instância já configurada do nosso bot
 from app.bot.setup import telegram_app 
-from app.api.routers.products import router as products_router
+from app.api.routers.product import router as products_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
