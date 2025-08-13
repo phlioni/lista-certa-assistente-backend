@@ -91,7 +91,9 @@ async def get_address_from_coords(latitude: float, longitude: float) -> str:
             return "Não foi possível obter o endereço."
 
 async def receive_market_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    print(f"[DEBUG] receive_market_location - update.message.web_app_data: {update.message.web_app_data}")
     data = json.loads(update.message.web_app_data.data)
+    print(f"[DEBUG] receive_market_location - data received: {data}")
     lat, lon = data['latitude'], data['longitude']
     address = await get_address_from_coords(lat, lon)
     context.user_data['market_location_data'] = {"latitude": lat, "longitude": lon, "address": address}
@@ -166,7 +168,9 @@ async def add_items_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
 
 async def receive_catalog_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print(f"[DEBUG] receive_catalog_data - update.message.web_app_data: {update.message.web_app_data}")
     data = json.loads(update.message.web_app_data.data)
+    print(f"[DEBUG] receive_catalog_data - data received: {data}")
     list_id = data.get('list_id')
     items = data.get('items', {})
 
