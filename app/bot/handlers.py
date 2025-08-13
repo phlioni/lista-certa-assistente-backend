@@ -68,7 +68,7 @@ async def receive_list_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def register_market_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
-    map_url = "https://clinquant-lollipop-5c6577.netlify.app/"
+    map_url = "https://lista-certa-maps.vercel.app/"
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📍 Abrir Mapa para Selecionar", web_app=WebAppInfo(url=map_url))]
     ])
@@ -155,7 +155,7 @@ async def add_items_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     list_id = query.data.split('_')[-1]
-    catalog_url = f"https://seu-webapp-de-catalogo.netlify.app/?list_id={list_id}"
+    catalog_url = f"https://clinquant-lollipop-5c6577.netlify.app/?list_id={list_id}"
     
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("Abrir Catálogo de Produtos", web_app=WebAppInfo(url=catalog_url))]
