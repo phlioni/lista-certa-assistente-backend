@@ -7,18 +7,16 @@ from telegram.ext import (
 )
 from app.db.database import SessionLocal
 from app.crud import (
-    crud_user, crud_shopping_list, crud_market, 
-    crud_product, crud_list_item # Novos imports
+    crud_user, crud_shopping_list, crud_market, crud_list_item
 )
 from app.schemas.user import UserCreate
 from app.schemas.shopping_list import ShoppingListCreate
 from app.schemas.market import MarketCreate
-from app.schemas.list_item import ListItemCreate # Novo import
+from app.schemas.list_item import ListItemCreate
 
 # Estados para as nossas conversas
 ASKING_LIST_NAME = 1
 RECEIVING_MARKET_LOCATION, ASKING_MARKET_NAME = range(2, 4)
-RECEIVING_CATALOG_DATA = 4 # Novo estado para receber dados do catálogo
 
 # --- FUNÇÃO START (sem alterações) ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -74,7 +72,7 @@ async def register_market_start(update: Update, context: ContextTypes.DEFAULT_TY
     # ... (código existente)
     query = update.callback_query
     await query.answer()
-    map_url = "https://lista-certa-maps.vercel.app/"
+    map_url = "https://clinquant-lollipop-5c6577.netlify.app/"
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("📍 Abrir Mapa para Selecionar", web_app=WebAppInfo(url=map_url))]
     ])
@@ -83,38 +81,6 @@ async def register_market_start(update: Update, context: ContextTypes.DEFAULT_TY
         reply_markup=keyboard
     )
     return RECEIVING_MARKET_LOCATION
-
-async def receive_market_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # ... (código existente)
-    data = json.loads(update.message.web_app_data.data)
-    lat, lon = data['latitude'], data['longitude']
-    address = await get_address_from_coords(lat, lon)
-    context.user_data['market_location_data'] = {"latitude": lat, "longitude": lon, "address": address}
-    await update.message.reply_text(
-        f"📍 *Localização recebida com sucesso!*\n\n*Endereço:* {address}\n\nAgora, por favor, digite o *nome do mercado*.",
-        parse_mode='Markdown'
-    )
-    return ASKING_MARKET_NAME
-
-async def receive_market_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # ... (código existente)
-    market_name = update.message.text
-    location_data = context.user_data.get('market_location_data')
-    if not location_data:
-        await update.message.reply_text("❌ Ocorreu um erro. Por favor, tente novamente.")
-        return ConversationHandler.END
-    db = SessionLocal()
-    try:
-        market_data = MarketCreate(
-            name=market_name, latitude=location_data['latitude'],
-            longitude=location_data['longitude'], address=location_data['address']
-        )
-        crud_market.create_market(db, market=market_data)
-        await update.message.reply_text(f"✅ Mercado '{market_name}' cadastrado com sucesso!")
-    finally:
-        db.close()
-    context.user_data.pop('market_location_data', None)
-    return ConversationHandler.END
 
 # --- FUNÇÃO PARA MOSTRAR LISTAS (ATUALIZADA) ---
 async def show_my_lists(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -136,10 +102,8 @@ async def show_my_lists(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         message = "Aqui estão as suas listas. Clique para ver ou adicionar itens:"
         
-        # --- MUDANÇA PRINCIPAL: CRIA BOTÕES PARA CADA LISTA ---
         keyboard = []
         for shopping_list in lists:
-            # Para cada lista, criamos uma linha de botões
             button_row = [
                 InlineKeyboardButton(f"🛒 {shopping_list.name}", callback_data=f"view_list_{shopping_list.id}"),
                 InlineKeyboardButton("➕ Adicionar Itens", callback_data=f"add_items_{shopping_list.id}")
@@ -151,34 +115,44 @@ async def show_my_lists(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     finally:
         db.close()
 
-# --- NOVAS FUNÇÕES PARA ADICIONAR ITENS ---
+# --- LÓGICA PARA ADICIONAR ITENS ---
 async def add_items_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Abre o Web App do catálogo para uma lista específica."""
     query = update.callback_query
     await query.answer()
-
-    # Extrai o ID da lista do callback_data (ex: "add_items_123")
     list_id = query.data.split('_')[-1]
-    
-    # URL do seu Web App do catálogo (lembre-se de o criar e hospedar)
-    # Passamos o list_id como um parâmetro no URL
-    catalog_url = f"https://clinquant-lollipop-5c6577.netlify.app?list_id={list_id}"
-    
+    catalog_url = f"https://clinquant-lollipop-5c6577.netlify.app/?list_id={list_id}" # URL do seu WebApp de catálogo
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("Abrir Catálogo de Produtos", web_app=WebAppInfo(url=catalog_url))]
     ])
-    
     await query.edit_message_text(
         text="Clique no botão abaixo para abrir o catálogo e adicionar itens a esta lista.",
         reply_markup=keyboard
     )
 
-async def receive_catalog_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Recebe os dados do Web App do catálogo e salva os itens no banco."""
+# --- NOVA FUNÇÃO "DISTRIBUIDORA" PARA DADOS DE WEB APP ---
+async def receive_web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Recebe TODOS os dados de Web Apps e decide o que fazer."""
     data = json.loads(update.message.web_app_data.data)
-    list_id = data.get('list_id')
-    items = data.get('items', {}) # items será um dicionário { "productId": quantity }
 
+    # Verifica se os dados são do catálogo (contêm 'list_id' e 'items')
+    if 'list_id' in data and 'items' in data:
+        return await receive_catalog_data_logic(update, context, data)
+    
+    # Verifica se os dados são do mapa (contêm 'latitude' e 'longitude')
+    elif 'latitude' in data and 'longitude' in data:
+        # Passa os dados para a lógica do ConversationHandler do mercado
+        # e avança a conversa para o próximo estado
+        return await receive_market_location_logic(update, context, data)
+        
+    else:
+        await update.message.reply_text("Recebi dados desconhecidos do Web App.")
+        return ConversationHandler.END
+
+# Lógica para receber dados do CATÁLOGO
+async def receive_catalog_data_logic(update: Update, context: ContextTypes.DEFAULT_TYPE, data: dict):
+    list_id = data.get('list_id')
+    items = data.get('items', {})
+    
     if not list_id or not items:
         await update.message.reply_text("❌ Erro ao receber os dados do catálogo.")
         return
@@ -191,17 +165,56 @@ async def receive_catalog_data(update: Update, context: ContextTypes.DEFAULT_TYP
                 item_data = ListItemCreate(product_id=int(product_id), quantity=int(quantity))
                 crud_list_item.add_item_to_list(db=db, item=item_data, list_id=int(list_id))
                 items_added_count += 1
-        
         await update.message.reply_text(f"✅ {items_added_count} iten(s) adicionado(s) à sua lista com sucesso!")
-    except Exception as e:
-        print(f"Erro ao salvar itens da lista: {e}")
-        await update.message.reply_text("❌ Ocorreu um erro ao salvar os itens na sua lista.")
     finally:
         db.close()
+    return ConversationHandler.END
 
-# --- FUNÇÃO DE CANCELAMENTO (sem alterações) ---
+# Lógica para receber dados do MAPA
+async def receive_market_location_logic(update: Update, context: ContextTypes.DEFAULT_TYPE, data: dict) -> int:
+    lat, lon = data['latitude'], data['longitude']
+    address = await get_address_from_coords(lat, lon)
+    context.user_data['market_location_data'] = {"latitude": lat, "longitude": lon, "address": address}
+    await update.message.reply_text(
+        f"📍 *Localização recebida!*\n\n*Endereço:* {address}\n\nAgora, por favor, digite o *nome do mercado*.",
+        parse_mode='Markdown'
+    )
+    return ASKING_MARKET_NAME
+
+async def get_address_from_coords(latitude: float, longitude: float) -> str:
+    url = f"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={latitude}&lon={longitude}"
+    headers = {"User-Agent": "ListaCertaBot/1.0"}
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("display_name", "Endereço não encontrado")
+        except httpx.RequestError:
+            return "Não foi possível obter o endereço."
+
+async def receive_market_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    market_name = update.message.text
+    location_data = context.user_data.get('market_location_data')
+    if not location_data:
+        await update.message.reply_text("❌ Ocorreu um erro, tente novamente.")
+        return ConversationHandler.END
+
+    db = SessionLocal()
+    try:
+        market_data = MarketCreate(
+            name=market_name, latitude=location_data['latitude'],
+            longitude=location_data['longitude'], address=location_data['address']
+        )
+        crud_market.create_market(db, market=market_data)
+        await update.message.reply_text(f"✅ Mercado '{market_name}' cadastrado com sucesso!")
+    finally:
+        db.close()
+    
+    context.user_data.pop('market_location_data', None)
+    return ConversationHandler.END
+
 async def cancel_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # ... (código existente)
     await update.message.reply_text("Ação cancelada.")
     context.user_data.clear()
     return ConversationHandler.END
