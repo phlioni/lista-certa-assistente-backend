@@ -3,7 +3,7 @@
 import httpx
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
-
+from fastapi.middleware.cors import CORSMiddleware
 from telegram import Update
 
 from app.core.config import settings
@@ -37,6 +37,20 @@ async def lifespan(app: FastAPI):
 
 # Cria a aplicação FastAPI, passando o ciclo de vida
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "https://clinquant-lollipop-5c6577.netlify.app", # O seu Web App do catálogo
+    "https://lista-certa-maps.vercel.app",        # O seu Web App do mapa
+    # Adicione "http://localhost:3000" ou outras URLs se for testar localmente
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Permite todos os métodos (GET, POST, etc.)
+    allow_headers=["*"], # Permite todos os cabeçalhos
+)
 
 app.include_router(products_router, prefix="/api/products", tags=["products"])
 
