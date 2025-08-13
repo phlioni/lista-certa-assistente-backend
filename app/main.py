@@ -9,6 +9,7 @@ from telegram import Update
 from app.core.config import settings
 # Importa a instância já configurada do nosso bot
 from app.bot.setup import telegram_app 
+from app.api.routers import products
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,6 +37,8 @@ async def lifespan(app: FastAPI):
 
 # Cria a aplicação FastAPI, passando o ciclo de vida
 app = FastAPI(lifespan=lifespan)
+
+app.include_router(products.router, prefix="/api/products", tags=["products"])
 
 @app.post("/webhook/{token}")
 async def handle_webhook(request: Request, token: str):

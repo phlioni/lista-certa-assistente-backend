@@ -15,3 +15,5 @@ from app.db.models.shopping_list import ShoppingList
 
 # --- ADICIONE ESTA LINHA ---
 from app.db.models.market import Market
+from app.db.models.product import Product
+from app.db.models.list_item import ListItem

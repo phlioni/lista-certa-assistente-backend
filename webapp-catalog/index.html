@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-g">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Catálogo de Produtos</title>
+    <style>
+        :root { --tg-theme-bg-color: #ffffff; --tg-theme-text-color: #000000; --tg-theme-button-color: #2481cc; --tg-theme-button-text-color: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 15px; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+        .category { margin-bottom: 20px; }
+        .category h2 { margin-bottom: 10px; border-bottom: 2px solid #eee; padding-bottom: 5px; }
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .product-name { font-size: 16px; }
+        .quantity-selector { display: flex; align-items: center; }
+        .quantity-btn { background-color: #f0f0f0; border: none; width: 30px; height: 30px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+        .quantity-value { font-size: 16px; margin: 0 15px; min-width: 20px; text-align: center; }
+        #loading { text-align: center; padding: 50px; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div id="catalog-container"></div>
+    <div id="loading">A carregar produtos...</div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+
+            const mainButton = tg.MainButton;
+            mainButton.setText('Adicionar 0 Itens');
+            mainButton.disable();
+            mainButton.show();
+
+            const catalogContainer = document.getElementById('catalog-container');
+            const loadingDiv = document.getElementById('loading');
+
+            let selectedItems = {}; // { productId: quantity }
+
+            // Obtém o ID da lista a partir dos parâmetros do URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const listId = urlParams.get('list_id');
+
+            // A URL da sua API. Substitua pela sua URL pública da AWS.
+            const apiUrl = 'https://d3uf84g64l7lza.cloudfront.net/api/products/';
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(products => {
+                    loadingDiv.style.display = 'none';
+                    const productsByCategory = products.reduce((acc, product) => {
+                        if (!acc[product.category]) acc[product.category] = [];
+                        acc[product.category].push(product);
+                        return acc;
+                    }, {});
+
+                    for (const category in productsByCategory) {
+                        const categoryDiv = document.createElement('div');
+                        categoryDiv.className = 'category';
+                        categoryDiv.innerHTML = `<h2>${category}</h2>`;
+
+                        productsByCategory[category].forEach(product => {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'product-item';
+                            itemDiv.innerHTML = `
+                                <div class="product-name">${product.name}</div>
+                                <div class="quantity-selector">
+                                    <button class="quantity-btn" data-product-id="${product.id}" data-action="minus">-</button>
+                                    <span class="quantity-value" id="q-${product.id}">0</span>
+                                    <button class="quantity-btn" data-product-id="${product.id}" data-action="plus">+</button>
+                                </div>
+                            `;
+                            categoryDiv.appendChild(itemDiv);
+                        });
+                        catalogContainer.appendChild(categoryDiv);
+                    }
+                })
+                .catch(error => {
+                    loadingDiv.innerText = 'Erro ao carregar produtos.';
+                    console.error('Fetch error:', error);
+                });
+
+            catalogContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('quantity-btn')) {
+                    const productId = e.target.dataset.productId;
+                    const action = e.target.dataset.action;
+                    const quantitySpan = document.getElementById(`q-${productId}`);
+                    let currentQuantity = parseInt(quantitySpan.textContent);
+
+                    if (action === 'plus') {
+                        currentQuantity++;
+                    } else if (action === 'minus' && currentQuantity > 0) {
+                        currentQuantity--;
+                    }
+
+                    quantitySpan.textContent = currentQuantity;
+
+                    if (currentQuantity > 0) {
+                        selectedItems[productId] = currentQuantity;
+                    } else {
+                        delete selectedItems[productId];
+                    }
+                    updateMainButton();
+                }
+            });
+
+            function updateMainButton() {
+                const totalItems = Object.keys(selectedItems).length;
+                if (totalItems > 0) {
+                    mainButton.setText(`Adicionar ${totalItems} Iten(s)`);
+                    mainButton.enable();
+                } else {
+                    mainButton.setText('Adicionar 0 Itens');
+                    mainButton.disable();
+                }
+            }
+
+            tg.onEvent('mainButtonClicked', function() {
+                const dataToSend = {
+                    list_id: listId,
+                    items: selectedItems
+                };
+                tg.sendData(JSON.stringify(dataToSend));
+            });
+        });
+    </script>
+</body>
+</html>
